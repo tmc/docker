@@ -60,8 +60,6 @@ Available Commands
 
 .. include:: command/logs.rst
 
-.. include:: command/ls.rst
-
 .. include:: command/port.rst
 
 .. include:: command/ps.rst

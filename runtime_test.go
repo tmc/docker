@@ -3,7 +3,6 @@ package docker
 import (
 	"bytes"
 	"fmt"
-	"github.com/dotcloud/docker/devmapper"
 	"github.com/dotcloud/docker/utils"
 	"io"
 	"io/ioutil"
@@ -151,17 +150,17 @@ func init() {
 		panic(err)
 	}
 
-	deviceset := devmapper.NewDeviceSetDM(unitTestStoreDevicesBase)
-	// Create a device, which triggers the initiation of the base FS
-	// This avoids other tests doing this and timing out
-	deviceset.AddDevice("init","")
-
 	// Make it our Store root
-	if runtime, err := NewRuntimeFromDirectory(unitTestStoreBase, deviceset, false); err != nil {
+	if runtime, err := NewRuntimeFromDirectory(unitTestStoreBase, false); err != nil {
 		log.Fatalf("Unable to create a runtime for tests:", err)
 	} else {
 		globalRuntime = runtime
 	}
+
+	// Create a device, which triggers the initiation of the base FS
+	// This avoids other tests doing this and timing out
+	deviceset := devmapper.NewDeviceSetDM(unitTestStoreDevicesBase)
+	deviceset.AddDevice("init","")
 
 	// Create the "Server"
 	srv := &Server{

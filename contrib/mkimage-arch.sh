@@ -26,10 +26,10 @@ expect <<EOF
   set send_slow {1 1}
   spawn pacstrap -c -d -G -i $ROOTFS base haveged --ignore $PKGIGNORE
   expect {
-    "Install anyway?" { send n\r; exp_continue }
-    "(default=all)" { send \r; exp_continue }
-    "Proceed with installation?" { send "\r"; exp_continue }
-    "skip the above package" {send "y\r"; exp_continue }
+    "Install anyway?" { send -s n\r; exp_continue }
+    "(default=all)" { send -s \r\r; exp_continue }
+    "Proceed with installation?" { send -s \r; exp_continue }
+    "skip the above package" {send -s y\r; exp_continue }
     "checking" { exp_continue }
     "loading" { exp_continue }
     "installing" { exp_continue }
@@ -61,6 +61,11 @@ mknod -m 666 ${DEV}/tty0 c 4 0
 mknod -m 666 ${DEV}/full c 1 7
 mknod -m 600 ${DEV}/initctl p
 mknod -m 666 ${DEV}/ptmx c 5 2
+
+ln -s /proc/self/fd/0 ${DEV}/stdin
+ln -s /proc/self/fd/1 ${DEV}/stdout
+ln -s /proc/self/fd/2 ${DEV}/stderr
+ln -s /proc/self/fd ${DEV}/fd
 
 tar --numeric-owner -C $ROOTFS -c . | docker import - archlinux
 docker run -i -t archlinux echo Success.

@@ -25,6 +25,7 @@ type (
 	Compression   int
 	TarOptions    struct {
 		Includes    []string
+		Excludes    []string
 		Compression Compression
 	}
 )
@@ -290,7 +291,7 @@ func createTarFile(path, extractDir string, hdr *tar.Header, reader io.Reader) e
 // Tar creates an archive from the directory at `path`, and returns it as a
 // stream of bytes.
 func Tar(path string, compression Compression) (io.ReadCloser, error) {
-	return TarFilter(path, &TarOptions{Compression: compression})
+	return TarWithOptions(path, &TarOptions{Compression: compression})
 }
 
 func escapeName(name string) string {
@@ -309,9 +310,9 @@ func escapeName(name string) string {
 	return string(escaped)
 }
 
-// Tar creates an archive from the directory at `path`, only including files whose relative
-// paths are included in `filter`. If `filter` is nil, then all files are included.
-func TarFilter(srcPath string, options *TarOptions) (io.ReadCloser, error) {
+// TarWithOptions creates an archive from the directory at `path`, only including files whose relative
+// paths are included in `options.Includes` (if non-nil) or not in `options.Excludes`.
+func TarWithOptions(srcPath string, options *TarOptions) (io.ReadCloser, error) {
 	pipeReader, pipeWriter := io.Pipe()
 
 	compressWriter, err := CompressStream(pipeWriter, options.Compression)
@@ -341,6 +342,18 @@ func TarFilter(srcPath string, options *TarOptions) (io.ReadCloser, error) {
 				relFilePath, err := filepath.Rel(srcPath, filePath)
 				if err != nil {
 					return nil
+				}
+
+				for _, exclude := range options.Excludes {
+					matched, err := filepath.Match(exclude, relFilePath)
+					if err != nil {
+						utils.Errorf("Error matching: %s (pattern: %s)\n", relFilePath, exclude)
+						return err
+					}
+					if matched {
+						utils.Debugf("Skipping excluded path: %s\n", relFilePath)
+						return filepath.SkipDir
+					}
 				}
 
 				if err := addTarFile(filePath, relFilePath, tw); err != nil {
@@ -455,7 +468,7 @@ func Untar(archive io.Reader, dest string, options *TarOptions) error {
 // TarUntar aborts and returns the error.
 func TarUntar(src string, dst string) error {
 	utils.Debugf("TarUntar(%s %s)", src, dst)
-	archive, err := TarFilter(src, &TarOptions{Compression: Uncompressed})
+	archive, err := TarWithOptions(src, &TarOptions{Compression: Uncompressed})
 	if err != nil {
 		return err
 	}

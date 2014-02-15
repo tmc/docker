@@ -165,7 +165,14 @@ func (cli *DockerCli) CmdBuild(args ...string) error {
 		if err = utils.ValidateContextDirectory(root); err != nil {
 			return fmt.Errorf("Error checking context is accessible: '%s'. Please check permissions and try again.", err)
 		}
-		context, err = archive.Tar(root, archive.Uncompressed)
+		options := &archive.TarOptions{
+			Compression: archive.Uncompressed,
+		}
+		ignoreFile := path.Join(root, ".dockerignore")
+		if ignore, err := ioutil.ReadFile(ignoreFile); err == nil {
+			options.Excludes = strings.Split(string(ignore), "\n")
+		}
+		context, err = archive.TarWithOptions(root, options)
 	}
 	var body io.Reader
 	// Setup an upload progress bar

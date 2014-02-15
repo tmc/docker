@@ -160,7 +160,14 @@ func (cli *DockerCli) CmdBuild(args ...string) error {
 		if _, err = os.Stat(filename); os.IsNotExist(err) {
 			return fmt.Errorf("no Dockerfile found in %s", cmd.Arg(0))
 		}
-		context, err = archive.Tar(root, archive.Uncompressed)
+		options := &archive.TarOptions{
+			Compression: archive.Uncompressed,
+		}
+		ignoreFile := path.Join(root, ".dockerignore")
+		if ignore, err := ioutil.ReadFile(ignoreFile); err == nil {
+			options.Excludes = strings.Split(string(ignore), "\n")
+		}
+		context, err = archive.TarWithOptions(root, options)
 	}
 	var body io.Reader
 	// Setup an upload progress bar

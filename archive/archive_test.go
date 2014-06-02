@@ -146,7 +146,7 @@ func TestTarWithOptions(t *testing.T) {
 		numChanges int
 	}{
 		{&TarOptions{Includes: []string{"1"}}, 1},
-		{&TarOptions{Excludes: []string{"1"}}, 1},
+		{&TarOptions{Excludes: []string{"2"}}, 1},
 	}
 	for _, testCase := range cases {
 		changes, err := tarUntar(t, origin, testCase.opts)

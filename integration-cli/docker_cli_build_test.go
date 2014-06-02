@@ -729,6 +729,53 @@ func TestBuildEntrypoint(t *testing.T) {
 	logDone("build - entrypoint")
 }
 
+func TestDockerignoreWithExplicitAddOnPath(t *testing.T) {
+	buildDirectory := filepath.Join(workingDirectory, "build_tests", "TestDockerignore/IgnorePathsCannotBeAdded")
+	buildCmd := exec.Command(dockerBinary, "build", "-t", "testdockerignoreimg", ".")
+	buildCmd.Dir = buildDirectory
+	_, exitCode, err := runCommandWithOutput(buildCmd)
+
+	if err == nil && exitCode == 0 {
+		t.Fatalf("build should have failed: this Dockerfile is invalid, adding an ignored file is not allowed", err)
+	}
+
+	deleteImages("testdockerignoreimg")
+
+	logDone("build - add a path specified in .dockerignore will not build")
+}
+
+func TestDockerignoreWithMultiplePaths(t *testing.T) {
+	buildDirectory := filepath.Join(workingDirectory, "build_tests", "TestDockerignore/IgnoreWorksForMultiplePaths")
+	buildCmd := exec.Command(dockerBinary, "build", "-t", "testdockerignoreimg", ".")
+	buildCmd.Dir = buildDirectory
+	out, exitCode, err := runCommandWithOutput(buildCmd)
+	errorOut(err, t, fmt.Sprintf("build failed to complete: %v %v", out, err))
+
+	if err != nil || exitCode != 0 {
+		t.Fatal("failed to build the image")
+	}
+
+	deleteImages("testdockerignoreimg")
+
+	logDone("build - add whole directory will filter out paths in .dockerignore")
+}
+
+func TestDockerignoreCanIgnoreDockerfile(t *testing.T) {
+	buildDirectory := filepath.Join(workingDirectory, "build_tests", "TestDockerignore/IgnoreWorksForDockerfile")
+	buildCmd := exec.Command(dockerBinary, "build", "-t", "testdockerignoreimg", ".")
+	buildCmd.Dir = buildDirectory
+	out, exitCode, err := runCommandWithOutput(buildCmd)
+	errorOut(err, t, fmt.Sprintf("build failed to complete: %v %v", out, err))
+
+	if err != nil || exitCode != 0 {
+		t.Fatal("failed to build the image")
+	}
+
+	deleteImages("testdockerignoreimg")
+
+	logDone("build - dockerignore works on Dockerfile too")
+}
+
 // TODO: TestCaching
 
 // TODO: TestADDCacheInvalidation
